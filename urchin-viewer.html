@@ -184,7 +184,7 @@ input[type=range]::-webkit-slider-thumb{
         <div id="mat-list"></div>
       </div>
 
-      <div class="p-section">
+<div class="p-section">
         <div class="p-label">Camera</div>
         <div class="cam-btns">
           <button class="cam-btn" id="cb-front">Front</button>
@@ -323,63 +323,10 @@ function applyAssignedColors() {
   nudgeRender();
 }
 
-function meshWorldCenter(mesh) {
-  mesh.updateWorldMatrix(true, true);
-  mesh.geometry.computeBoundingBox();
-  const gb = mesh.geometry.boundingBox;
-  const lx = (gb.min.x + gb.max.x) / 2;
-  const ly = (gb.min.y + gb.max.y) / 2;
-  const lz = (gb.min.z + gb.max.z) / 2;
-  const e = mesh.matrixWorld.elements;
-  return {
-    x: e[0]*lx + e[4]*ly + e[8]*lz  + e[12],
-    y: e[1]*lx + e[5]*ly + e[9]*lz  + e[13],
-    z: e[2]*lx + e[6]*ly + e[10]*lz + e[14],
-  };
-}
-
-function centerOnDigestiveTract() {
-  const scene = getThreeScene();
-  if (!scene) return;
-
-  let dtMesh = null;
-  const allMeshes = [];
-  scene.traverse(obj => {
-    if (!obj.isMesh) return;
-    allMeshes.push(obj);
-    if (obj.name === 'digestive_tract') dtMesh = obj;
-  });
-  if (!dtMesh) return;
-
-  // Whole-model bounding box in world space
-  let minX=Infinity, minY=Infinity, minZ=Infinity;
-  let maxX=-Infinity, maxY=-Infinity, maxZ=-Infinity;
-  allMeshes.forEach(m => {
-    m.updateWorldMatrix(true, true);
-    m.geometry.computeBoundingBox();
-    const gb = m.geometry.boundingBox;
-    const e = m.matrixWorld.elements;
-    [[gb.min.x,gb.min.y,gb.min.z],[gb.max.x,gb.max.y,gb.max.z]].forEach(([lx,ly,lz]) => {
-      const wx = e[0]*lx + e[4]*ly + e[8]*lz + e[12];
-      const wy = e[1]*lx + e[5]*ly + e[9]*lz + e[13];
-      const wz = e[2]*lx + e[6]*ly + e[10]*lz + e[14];
-      if(wx<minX)minX=wx; if(wx>maxX)maxX=wx;
-      if(wy<minY)minY=wy; if(wy>maxY)maxY=wy;
-      if(wz<minZ)minZ=wz; if(wz>maxZ)maxZ=wz;
-    });
-  });
-
-  // Express digestive tract center as % of whole model bounding box
-  const c = meshWorldCenter(dtMesh);
-  const px = ((c.x - minX) / (maxX - minX) * 100).toFixed(2);
-  const py = ((c.y - minY) / (maxY - minY) * 100).toFixed(2);
-  const pz = ((c.z - minZ) / (maxZ - minZ) * 100).toFixed(2);
-  requestAnimationFrame(() => { mv.cameraTarget = `${px}% ${py}% ${pz}%`; });
-}
 
 function buildElementControls() {
   applyAssignedColors();
-  centerOnDigestiveTract();
+  requestAnimationFrame(setRotationCenter);
   const list    = document.getElementById('mat-list');
   const loading = document.getElementById('mat-loading');
   loading.style.display = 'none';
@@ -487,6 +434,10 @@ function applyElement(i) {
     });
   });
   nudgeRender();
+}
+
+function setRotationCenter() {
+  mv.cameraTarget = '0% 31% 13.5%';
 }
 
 // Wireframe toggle
